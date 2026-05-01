@@ -1,7 +1,6 @@
 # 🥫 TUMBANG PRESO: STREET KING ARCADE 👟
 
-https://github.com/user-attachments/assets/a7c93bd1-5b8a-4c49-9c45-b11b470d84fc
-
+https://github.com/user-attachments/assets/53c3bc62-b741-4737-9da9-2629e546c07f
 
 [![Game Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg)]()
 [![Theme](https://img.shields.io/badge/Theme-Filipino_Street_Game-orange.svg)]()
