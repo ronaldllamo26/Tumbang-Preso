@@ -1,0 +1,13 @@
+# OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Environment/Config
+.env
+config.local.php
+
+# PHP/Web
+vendor/
+composer.lock
+*.log
