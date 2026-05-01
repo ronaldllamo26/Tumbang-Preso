@@ -9,8 +9,9 @@ class Projectile {
         this.z = -10; // Start slightly above ground
         this.velocityX = velocityX;
         this.velocityY = velocityY;
-        this.velocityZ = -6; // Initial upward arc (slightly higher)
-        this.gravity = 0.2; // Lower gravity for longer air time
+        this.velocityZ = -6; // Initial upward arc
+        this.gravity = 0.2; 
+        this.friction = 0.985; // Slow down over time in the air
         this.radius = 15;
         this.rotation = 0;
         this.rotationSpeed = (Math.random() - 0.5) * 0.5;
@@ -24,7 +25,9 @@ class Projectile {
     update(canvasWidth, canvasHeight) {
         if (this.onGround) return;
 
-        // Move ground position
+        // Move ground position with friction
+        this.velocityX *= this.friction;
+        this.velocityY *= this.friction;
         this.x += this.velocityX;
         this.y += this.velocityY;
         
@@ -43,11 +46,12 @@ class Projectile {
             this.rotation = 0; 
         }
 
-        // Boundary Collision (Clamp to stay on screen)
-        if (this.x < 10) { this.x = 10; this.velocityX = 0; }
-        if (this.x > canvasWidth - 10) { this.x = canvasWidth - 10; this.velocityX = 0; }
-        if (this.y < 55) { this.y = 55; this.velocityY = 0; }
-        if (this.y > canvasHeight - 10) { this.y = canvasHeight - 10; this.velocityY = 0; }
+        // Boundary Collision (Keep within playable street area)
+        const margin = 60;
+        if (this.x < margin) { this.x = margin; this.velocityX = 0; }
+        if (this.x > canvasWidth - margin) { this.x = canvasWidth - margin; this.velocityX = 0; }
+        if (this.y < 120 + margin) { this.y = 120 + margin; this.velocityY = 0; }
+        if (this.y > canvasHeight - margin) { this.y = canvasHeight - margin; this.velocityY = 0; }
     }
 
     draw(ctx) {

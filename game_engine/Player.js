@@ -60,6 +60,19 @@ class Player {
         this.headImage = new Image();
         this.hasCustomFace = false;
         this.headRadius = 24;
+
+        // Skill & Power-up Properties
+        this.dashCooldown = 0;
+        this.dashTimer = 0;
+        this.isDashing = false;
+        this.baseSpeed = this.speed;
+        this.speedTimer = 0;
+        this.invinceTimer = 0;
+        this.isInvincible = false;
+        this.slowTimer = 0; // Boss intimidation effect
+        
+        // Animation Stun Effect
+        this.stunRotation = 0;
     }
 
     processTransparency(img, canvas, ctx) {
@@ -87,7 +100,14 @@ class Player {
     update(canvasWidth, canvasHeight) {
         if (this.isStunned) {
             this.stunTimer--;
-            if (this.stunTimer <= 0) this.isStunned = false;
+            if (this.stunTimer <= 0) {
+                this.isStunned = false;
+                this.stunRotation = 0;
+            }
+            // Gentle rocking or falling position
+            if (this.stunRotation !== 0) {
+                this.rotation = this.stunRotation;
+            }
             return;
         }
 
@@ -130,6 +150,31 @@ class Player {
         if (this.x + this.width > canvasWidth) this.x = canvasWidth - this.width;
         if (this.y < 120) this.y = 120; // Street starting area
         if (this.y + this.height > canvasHeight) this.y = canvasHeight - this.height;
+
+        // Dash Logic
+        if (this.dashTimer > 0) {
+            this.dashTimer--;
+            if (this.dashTimer <= 0) {
+                this.isDashing = false;
+                this.speed = this.baseSpeed;
+            }
+        }
+        // Power-up Timer Logic
+        if (this.speedTimer > 0) {
+            this.speedTimer--;
+            if (this.speedTimer <= 0) this.speed = this.baseSpeed;
+        }
+        if (this.invinceTimer > 0) {
+            this.invinceTimer--;
+            if (this.invinceTimer <= 0) this.isInvincible = false;
+        }
+        if (this.slowTimer > 0) {
+            this.slowTimer--;
+            this.speed = this.baseSpeed * 0.5; // 50% slow
+            if (this.slowTimer <= 0 && this.speedTimer <= 0) this.speed = this.baseSpeed;
+        }
+
+        if (this.dashCooldown > 0) this.dashCooldown--;
     }
 
     draw(ctx) {
@@ -154,6 +199,24 @@ class Player {
         } else {
             ctx.fillStyle = this.color;
             ctx.fillRect(0, 0, this.width, this.height);
+        }
+
+        // Power-up Visual Effects (No more boxes!)
+        const glowPulse = Math.abs(Math.sin(Date.now() / 150));
+        if (this.speedTimer > 0) {
+            // Red Aura at feet
+            ctx.fillStyle = `rgba(255, 0, 0, ${0.2 + glowPulse * 0.3})`;
+            ctx.beginPath(); ctx.ellipse(this.width/2, this.height, 40 + glowPulse*10, 20 + glowPulse*5, 0, 0, Math.PI*2); ctx.fill();
+            // Speed "Wind" Particles
+            ctx.strokeStyle = `rgba(255, 255, 255, ${glowPulse})`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-10, this.height - 20); ctx.lineTo(-30, this.height - 10); ctx.stroke();
+        }
+        if (this.invinceTimer > 0) {
+            // Cyan Shield Aura
+            ctx.strokeStyle = `rgba(0, 255, 255, ${0.4 + glowPulse * 0.4})`; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(this.width/2, this.height/2, 60 + glowPulse*5, 0, Math.PI*2); ctx.stroke();
+            // Floating Sparkles
+            ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(Math.cos(Date.now()/200)*50+this.width/2, Math.sin(Date.now()/200)*50+this.height/2, 4, 0, Math.PI*2); ctx.fill();
         }
 
         // Custom Face (Only if uploaded)
@@ -227,9 +290,10 @@ class Player {
         if (this.health < 0) this.health = 0;
     }
 
-    stun(duration) {
+    stun(duration, tilt = 0) {
         this.isStunned = true;
-        this.stunTimer = duration;
+        this.stunTimer = Math.max(this.stunTimer, duration);
+        if (tilt !== 0) this.stunRotation = tilt;
     }
 
     jump() {
@@ -237,6 +301,17 @@ class Player {
             this.velocityZ = this.jumpForce;
             this.grounded = false;
         }
+    }
+
+    dash() {
+        if (this.dashCooldown <= 0) {
+            this.isDashing = true;
+            this.dashTimer = 15; // Dash for 15 frames
+            this.dashCooldown = 120; // 2 seconds cooldown at 60fps
+            this.speed = this.baseSpeed * 2.5;
+            return true;
+        }
+        return false;
     }
 
     drawDefaultFace(ctx, x, y, radius) {

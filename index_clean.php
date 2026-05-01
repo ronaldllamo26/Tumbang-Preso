@@ -18,6 +18,7 @@
     };
 
     let aiDecisionTimer = 0;
+    let isGameOver = false;
 
     window.setDifficulty = (level) => {
         currentDifficulty = level;
@@ -73,6 +74,12 @@
 
     window.startGame = (level) => {
         setDifficulty(level);
+        isGameOver = false;
+        lataScore = 0;
+        tsinelasCount = 10;
+        p1.health = 100;
+        p2.health = 100;
+        aiDecisionTimer = 0;
         document.getElementById('startOverlay').style.display = 'none';
         gameLoop();
     };
@@ -262,7 +269,7 @@
     }
 
     function gameLoop() {
-        if (lataScore >= targetScore) return;
+        if (isGameOver) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         p1.velocityX = 0; p1.velocityY = 0;
         if (input.isPressed('KeyW')) p1.velocityY = -p1.speed;
@@ -278,7 +285,8 @@
             showCombo("POINT SECURED!");
             if (lataScore >= targetScore) showResult("VICTORY! HARING KALSADA!");
         }
-        projectiles.forEach((p, index) => {
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+            const p = projectiles[i];
             p.update(canvas.width, canvas.height); p.draw(ctx);
             const p1cX = p1.x + p1.width / 2, p1cY = p1.y + p1.height / 2;
             if (p.onGround && Math.sqrt((p1cX - p.x)**2 + (p1cY - p.y)**2) < 70) {
@@ -287,7 +295,10 @@
                 if (pendingScore) slipperRecovered = true;
             }
             if (p.active && !p.onGround && !lata.isDown && Math.sqrt((p.x-lata.x)**2 + (p.y-lata.y)**2) < 40) {
-                lata.hit(p.velocityX, p.velocityY); p.onGround = true; sounds.hit.play();
+                lata.hit(p.velocityX, p.velocityY); 
+                p.onGround = true; 
+                p.velocityX = 0; p.velocityY = 0; p.z = 0;
+                sounds.hit.play();
                 p2.stun(120); pendingScore = true; slipperRecovered = false;
                 showCombo("LATA DOWN! KUNIN ANG TSINELAS!");
             }
@@ -295,8 +306,8 @@
             if (p.active && !p.onGround && Math.sqrt((p.x - p2cX)**2 + (p.y - p2cY)**2) < 50 && p2.z > -20) {
                 p2.takeDamage(10); p2.stun(60); p.active = false; showCombo("SWABE!");
             }
-            if (!p.active) projectiles.splice(index, 1);
-        });
+            if (!p.active) projectiles.splice(i, 1);
+        }
         const p1cX = p1.x + p1.width / 2, p1cY = p1.y + p1.height / 2;
         const p2cX = p2.x + p2.width / 2, p2cY = p2.y + p2.height / 2;
         if (!lata.isDown && !lata.isBeingCarried && !p2.isStunned && p1.x < 1150) {
@@ -315,8 +326,16 @@
     }
 
     function showResult(title) {
+        if (isGameOver) return;
+        isGameOver = true;
         document.getElementById('winnerTitle').innerText = title;
-        new bootstrap.Modal(document.getElementById('resultModal')).show();
+        const modalEl = document.getElementById('resultModal');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            alert(title);
+        }
     }
 
     uploadForm.addEventListener('submit', async (e) => {
