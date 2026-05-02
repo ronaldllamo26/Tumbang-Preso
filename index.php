@@ -10,19 +10,27 @@ require_once 'core/db.php';
     <title>Tumbang Preso | Street King</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Bangers&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffcc00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <style>
         :root { --accent-yellow: #ffcc00; --p1-blue: #007bff; --p2-red: #dc3545; }
         body { background: #000; color: #fff; font-family: 'Outfit', sans-serif; margin: 0; overflow: hidden; height: 100vh; display: flex; justify-content: center; align-items: center; width: 100vw; }
         
-        #orientation-warning {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
+        #orientation-warning, #rotateWarning {
+            display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 20000; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
+            pointer-events: none;
         }
-        @media (orientation: portrait) { #orientation-warning { display: flex; } }
+        @media (orientation: portrait) { 
+            #orientation-warning, #rotateWarning { display: flex !important; pointer-events: auto; } 
+        }
         
-        /* --- ARCADE BOX --- */
         #gameWrapper {
             position: relative;
+            z-index: 10;
             width: 1400px;
             max-width: 100vw;
             height: 900px;
@@ -34,22 +42,22 @@ require_once 'core/db.php';
             margin: auto;
         }
 
-        #gameCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
+        #gameCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; background: transparent; }
 
         .hud-card {
-            position: absolute; z-index: 100; background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(10px); border-radius: 12px; padding: 12px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1); border-top: 5px solid white;
-            pointer-events: auto;
+            position: absolute; z-index: 100; background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px); border-radius: 10px; padding: 8px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
         }
-        .p1-panel { top: 20px; left: 20px; width: 320px; border-color: var(--p1-blue); }
-        .p2-panel { top: 20px; right: 20px; width: 320px; border-color: var(--p2-red); text-align: right; }
+        .p1-panel { top: 15px; left: 80px; width: 260px; border-left: 4px solid var(--p1-blue); }
+        .p2-panel { top: 15px; right: 15px; width: 260px; border-right: 4px solid var(--p2-red); text-align: right; }
         .score-panel { top: 20px; left: 50%; transform: translateX(-50%); background: none; border: none; text-align: center; }
 
         .main-title { font-family: 'Permanent Marker', cursive; font-size: 3rem; color: var(--accent-yellow); text-shadow: 3px 3px 0px #000; margin: 0; }
         .score-display { font-family: 'Bangers', cursive; font-size: 5rem; background: rgba(0,0,0,0.6); padding: 0 40px; border-radius: 15px; display: inline-block; }
-        .label-text { font-family: 'Bangers', cursive; font-size: 1.6rem; margin-bottom: 2px; }
-        .progress { height: 14px; background: rgba(255,255,255,0.1); border-radius: 7px; }
+        .label-text { font-family: 'Bangers', cursive; font-size: 1.2rem; margin-bottom: 2px; }
+        .progress { height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; }
 
         #comboText {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0);
@@ -60,7 +68,8 @@ require_once 'core/db.php';
 
         .full-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto !important;
         }
         .btn-arcade {
             background: var(--accent-yellow); color: #000; font-family: 'Bangers', cursive;
@@ -75,16 +84,16 @@ require_once 'core/db.php';
         .stat-label { font-size: 1rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 3px; font-weight: bold; }
         
         .game-status {
-            position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
             text-align: center; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            z-index: 10;
+            z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 5px;
         }
         .round-tag {
             background: rgba(255, 204, 0, 0.9); color: #000;
-            padding: 5px 15px; border-radius: 20px; font-weight: 900;
-            font-size: 1.2rem; display: inline-block; margin-bottom: 5px;
+            padding: 4px 20px; border-radius: 20px; font-weight: 900;
+            font-size: 1.1rem; display: block;
             box-shadow: 0 4px 15px rgba(255,204,0,0.4);
-            text-transform: uppercase;
+            text-transform: uppercase; font-family: 'Bangers'; letter-spacing: 1px;
         }
         .boss-tag {
             background: #f44336; color: #fff;
@@ -134,14 +143,14 @@ require_once 'core/db.php';
             .skill-box { width: 55px; height: 55px; }
             .skill-box canvas, .skill-box img { width: 30px; height: 30px; }
             
+            .game-status { top: 15px; }
+            .game-status .score-display { font-size: 2.2rem; padding: 0 15px; border-radius: 8px; }
+            .round-tag { font-size: 0.8rem; padding: 2px 10px; }
             .hud-card { padding: 6px 12px; }
-            .p1-panel { top: 10px; left: 10px; width: 160px; }
-            .p2-panel { top: 10px; right: 10px; width: 160px; }
-            .score-panel { top: 5px; }
-            .score-panel .main-title { display: none; }
-            .score-panel .score-display { font-size: 2rem; padding: 0 15px; }
             .label-text { font-size: 1rem; }
-            #muteIcon { top: 10px; right: 180px; width: 40px; height: 40px; font-size: 1.2rem; }
+            #muteIcon { top: 10px; left: 10px; bottom: auto; right: auto; width: 40px; height: 40px; font-size: 1rem; z-index: 4000; }
+            .p1-panel { top: 10px; left: 60px; width: 120px; }
+            .p2-panel { top: 10px; right: 10px; width: 120px; }
             #comboText { font-size: 4rem; top: 30%; }
             
             /* Result Overlay Mobile */
@@ -153,12 +162,158 @@ require_once 'core/db.php';
             .leaderboard-table td { padding: 6px; }
             .btn-arcade { padding: 10px 25px; font-size: 1.2rem; }
         }
+
+        /* Celebration Effects */
+        .confetti {
+            position: absolute; width: 10px; height: 10px; background: #ffcc00;
+            z-index: 2500; pointer-events: none; border-radius: 2px;
+        }
+        @keyframes fall {
+            to { transform: translateY(1000px) rotate(720deg); opacity: 0; }
+        }
+        .victory-glow {
+            animation: victory-pulse 2s infinite;
+        }
+        @keyframes victory-pulse {
+            0% { text-shadow: 0 0 20px rgba(255, 204, 0, 0.5); }
+            50% { text-shadow: 0 0 50px rgba(255, 204, 0, 1), 0 0 100px rgba(255, 204, 0, 0.5); }
+            100% { text-shadow: 0 0 20px rgba(255, 204, 0, 0.5); }
+        }
+
+        /* --- LANDING PAGE STYLES --- */
+        #landingPage {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a; z-index: 5000; overflow-y: auto; overflow-x: hidden;
+            font-family: 'Outfit', sans-serif; scroll-behavior: smooth;
+        }
+        .landing-hero {
+            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(rgba(0,0,0,0.4), #0a0a0a), url('assets/images/tumbang_preso_hero.png') no-repeat center center;
+            background-size: cover; text-align: center; padding: 20px;
+        }
+        .landing-section { padding: 80px 20px; max-width: 1200px; margin: 0 auto; }
+        .section-title { font-family: 'Permanent Marker'; font-size: 3.5rem; color: var(--accent-yellow); text-align: center; margin-bottom: 50px; text-transform: uppercase; }
+        
+        .char-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .char-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px); border-radius: 24px; padding: 40px 30px; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .char-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,204,0,0.05), transparent);
+            transform: translateX(-100%); transition: 0.6s;
+        }
+        .char-card:hover { transform: translateY(-15px); border-color: var(--accent-yellow); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .char-card:hover::before { transform: translateX(100%); }
+        
+        .char-sprite-box { 
+            width: 120px; height: 140px; margin-bottom: 25px; 
+            display: flex; align-items: center; justify-content: center;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+            background: rgba(0,0,0,0.2); border-radius: 15px; padding: 15px;
+        }
+        .char-sprite-box img { width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.3s; }
+        .char-sprite-box img.ready { opacity: 1; }
+        .char-name { font-family: 'Bangers'; font-size: 2.2rem; color: #fff; margin-bottom: 8px; letter-spacing: 1px; }
+        .char-role { font-family: 'Outfit'; font-size: 0.8rem; color: var(--accent-yellow); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 15px; opacity: 0.8; }
+        .char-desc { font-size: 0.95rem; opacity: 0.6; line-height: 1.7; font-weight: 300; }
+
+        .powerup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .powerup-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 25px; text-align: center;
+            transition: transform 0.3s;
+        }
+        .powerup-card:hover { transform: scale(1.05); background: rgba(255,204,0,0.05); }
+        .powerup-sprite { 
+            width: 80px; height: 80px; margin: 0 auto 15px; 
+            background-size: 300% 100%; 
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 5px 10px rgba(255,204,0,0.2));
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .powerup-sprite.ready { opacity: 1; }
+
+        .how-to-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+        .control-item { display: flex; align-items: center; gap: 20px; margin-bottom: 25px; }
+        .control-key { 
+            background: #333; color: var(--accent-yellow); padding: 10px 20px; border-radius: 8px; 
+            font-family: 'Bangers'; font-size: 1.5rem; min-width: 80px; text-align: center;
+            box-shadow: 0 4px 0 #000;
+        }
+        .control-desc { font-size: 1.2rem; font-weight: 500; }
+
+        .btn-start-big {
+            background: var(--accent-yellow); color: #000; font-family: 'Bangers'; font-size: 3rem;
+            padding: 20px 80px; border-radius: 15px; border: none; cursor: pointer;
+            box-shadow: 0 10px 0 #b38f00; transition: transform 0.1s; margin-top: 30px;
+        }
+        .btn-start-big:active { transform: translateY(5px); box-shadow: 0 5px 0 #b38f00; }
+        
+        @media (max-width: 768px) {
+            .landing-hero { height: 100vh; }
+            .section-title { font-size: 2.5rem; }
+            .how-to-grid { grid-template-columns: 1fr; }
+            .btn-start-big { font-size: 2rem; padding: 15px 40px; }
+            .main-title { font-size: 5rem !important; }
+        }
+
+        /* --- MOBILE LANDSCAPE OPTIMIZATION --- */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .landing-hero { height: 100vh; padding: 10px; }
+            .main-title { font-size: 2.5rem !important; }
+            .landing-hero p { font-size: 1rem !important; margin-bottom: 5px; letter-spacing: 2px !important; }
+            .btn-start-big { font-size: 1.5rem; padding: 8px 30px; margin-top: 5px; box-shadow: 0 5px 0 #b38f00; }
+            .section-title { font-size: 1.8rem; margin-bottom: 15px; }
+            .landing-section { padding: 30px 10px; }
+            .char-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .char-card { padding: 15px 10px; border-radius: 15px; }
+            .char-sprite-box { width: 60px; height: 80px; margin-bottom: 8px; padding: 8px; }
+            .char-name { font-size: 1.2rem; }
+            .char-role { font-size: 0.6rem; margin-bottom: 3px; letter-spacing: 1px; }
+            .char-desc { font-size: 0.75rem; line-height: 1.4; }
+            .how-to-grid { grid-template-columns: 1fr 1fr; gap: 15px; }
+            .control-item { margin-bottom: 10px; gap: 10px; }
+            .control-key { font-size: 1rem; padding: 5px 10px; min-width: 60px; }
+            .control-desc { font-size: 0.9rem; }
+            .powerup-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .powerup-card { padding: 15px 10px; border-radius: 15px; }
+            .powerup-sprite { width: 50px; height: 50px; margin-bottom: 10px; }
+            .powerup-card .char-name { font-size: 1rem !important; }
+            .powerup-card .char-role { font-size: 0.55rem; }
+            .powerup-card .char-desc { font-size: 0.7rem; }
+            .powerup-card .char-desc { font-size: 0.7rem; }
+
+            /* HUD & Button Fix for Mobile Landscape */
+            #gameWrapper > div:first-child { flex-direction: column !important; top: 10px !important; left: 10px !important; }
+            #muteIcon, #pauseBtn { width: 40px !important; height: 40px !important; font-size: 1.2rem !important; }
+            
+            .player-hud { transform: scale(0.8); transform-origin: top; top: 10px !important; }
+            .player-hud.p1 { left: 100px !important; } /* Shifted further to avoid vertical buttons */
+            .player-hud.p2 { right: 10px !important; }
+            #roundCounter { top: 10px !important; transform: translateX(-50%) scale(0.8); }
+        }
+
+        #rotateWarning {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10000; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 20px; pointer-events: none;
+        }
+        @media (orientation: portrait) { #rotateWarning { display: flex; pointer-events: auto; } }
+        }
+        @media (orientation: portrait) and (max-width: 768px) {
+            #rotateWarning { display: flex; }
+        }
     </style>
 </head>
 <body>
 
 <div id="orientation-warning">
-    <div class="main-title" style="font-size: 3rem; margin-bottom: 20px;">LIPAT MO CP MO!</div>
+    <div class="main-title" style="font-size: 3rem; margin-bottom: 20px;">I-ROTATE ANG SELPON!</div>
     <p style="font-size: 1.5rem; opacity: 0.8;">Mas masarap maglaro pag naka-Landscape, pre.</p>
     <div style="font-size: 4rem; margin-top: 20px; animation: rotate 2s infinite;">📱🔄</div>
     <style>
@@ -166,13 +321,21 @@ require_once 'core/db.php';
     </style>
 </div>
 
-<!-- Procedures Sounds (No External Files) -->
-<audio id="audioBGM" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="auto" loop></audio>
+<!-- Audio Assets -->
+<audio id="audioBGM" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" preload="auto" loop></audio>
+<audio id="audioBark" src="https://raw.githubusercontent.com/rafael-puebla/p5.js-sound-library/master/samples/dog.mp3" preload="auto"></audio>
+<audio id="audioHorn" src="https://www.soundjay.com/transportation/car-horn-1.mp3" preload="auto"></audio>
+<audio id="audioWhistle" src="https://www.soundjay.com/communication/referee-whistle-01.mp3" preload="auto"></audio>
+<audio id="audioHit" src="https://www.soundjay.com/button/button-3.mp3" preload="auto"></audio>
+<audio id="audioCheer" src="https://www.soundjay.com/human/crowd-cheer-01.mp3" preload="auto"></audio>
 
-<button onclick="toggleMute()" style="position:fixed; top:20px; right:350px; z-index:3000; background:rgba(0,0,0,0.5); border:none; color:white; font-size:2rem; cursor:pointer; border-radius:50%; width:60px; height:60px; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);" id="muteIcon">🔊</button>
     <div id="gameWrapper">
+        <div style="position:absolute; top:15px; left:15px; z-index:3000; display:flex; gap:10px;">
+            <button onclick="toggleMute()" style="background:rgba(0,0,0,0.5); border:none; color:white; font-size:1.5rem; cursor:pointer; border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);" id="muteIcon">🔊</button>
+            <button onclick="togglePause()" style="background:rgba(0,0,0,0.5); border:none; color:white; font-size:1.5rem; cursor:pointer; border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);" id="pauseBtn">⏸</button>
+        </div>
         <div id="comboText">SAPUL!</div>
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" width="1400" height="900"></canvas>
 
         <!-- Mobile Controls -->
         <div id="joystick-container">
@@ -188,6 +351,7 @@ require_once 'core/db.php';
     <div class="game-status">
         <div id="roundIndicator" class="round-tag">GAME 1</div>
         <div class="score-display" id="current-score">0 / 3</div>
+        <div id="lives-display" style="font-size: 1.5rem; margin-top: 5px; filter: drop-shadow(0 0 5px rgba(255,204,0,0.5));">🧡🧡🧡</div>
     </div>
 
     <div class="hud-card p2-panel">
@@ -212,28 +376,172 @@ require_once 'core/db.php';
         </div>
     </div>
 
+    <!-- Rotate Warning -->
+    <div id="rotateWarning">
+        <div style="font-size: 5rem;">📱🔄</div>
+        <h2 style="font-family: 'Bangers'; color: var(--accent-yellow); font-size: 2.5rem;">I-ROTATE ANG SELPON!</h2>
+        <p style="font-family: 'Outfit'; color: #fff; opacity: 0.8;">Para sa "Street King" experience, i-rotate ang iyong phone sa LANDSCAPE mode.</p>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landingPage">
+        <section class="landing-hero">
+            <h1 class="main-title" style="font-size: 8rem; margin-bottom: 0;">TUMBANG PRESO</h1>
+            <p style="font-size: 2rem; font-family: 'Bangers'; color: var(--accent-yellow); letter-spacing: 5px;">STREET KING ARCADE</p>
+            <button onclick="handleEnterGame()" class="btn-start-big">MAGLARO NA!</button>
+            <p style="margin-top: 20px; opacity: 0.6; font-weight: bold;">SCROLL DOWN PARA MATUTO 📜</p>
+        </section>
+
+        <section class="landing-section">
+            <h2 class="section-title">KILALANIN ANG MGA TAMBAY</h2>
+            <div class="char-grid">
+                <div class="char-card">
+                    <div class="char-sprite-box"><img src="assets/sprites/p1_body.png" alt="P1"></div>
+                    <div class="char-name">SI BATO</div>
+                    <div class="char-role">ANG BIDA (PLAYER)</div>
+                    <div class="char-desc">Mabilis, matalas ang mata, at handang ipaglaban ang kanyang tsinelas. Ikaw ang magdadala ng tagumpay sa kalsada.</div>
+                </div>
+                <div class="char-card">
+                    <div class="char-sprite-box"><img src="assets/sprites/p2_body.png" alt="P2"></div>
+                    <div class="char-name">LUPIN</div>
+                    <div class="char-role">ANG TAYÂ (SEEKER)</div>
+                    <div class="char-desc">Ang kalaro mong laging gutom sa tag. Huwag kang magpapakampante dahil mabilis siyang kumilos kapag naitayo na ang lata.</div>
+                </div>
+                <div class="char-card">
+                    <div class="char-sprite-box"><img src="assets/sprites/tanod_body.png" alt="Tanod"></div>
+                    <div class="char-name">TANOD</div>
+                    <div class="char-role">ANG BOSS (GUARDIAN)</div>
+                    <div class="char-desc">Ang "End-Game" ng kalsada. May kapangyarihang kumpiskahin ang iyong gamit at pahintuin ka gamit ang kanyang pito.</div>
+                </div>
+                <div class="char-card">
+                    <div class="char-sprite-box" style="gap: 10px; flex-direction: column;">
+                        <img src="assets/sprites/stray_dog.png" style="height: 45%;" alt="Dog">
+                        <img src="assets/sprites/jeepney.png" style="height: 45%;" alt="Jeep">
+                    </div>
+                    <div class="char-name">HAZARDS</div>
+                    <div class="char-role">MGA SAGABAL</div>
+                    <div class="char-desc">Mula sa galit na asong Pinoy hanggang sa humaharurot na Jeepney. Mag-ingat dahil wala silang pinipili na sasagasaan!</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section">
+            <h2 class="section-title">MGA AGIMAT AT KAGAMITAN</h2>
+            <div class="powerup-grid">
+                <div class="powerup-card">
+                    <div class="powerup-sprite" data-sprite="assets/sprites/powerups.png" style="background-position: 0% 0%;" alt="Sili"></div>
+                    <div class="char-name" style="font-size: 1.5rem;">SILI (LABUYO)</div>
+                    <div class="char-role">SPEED BOOST</div>
+                    <div class="char-desc">Ratsada Mode! Bibigyan ka nito ng sobrang bilis na takbo para hindi ka maabutan ng taya.</div>
+                </div>
+                <div class="powerup-card">
+                    <div class="powerup-sprite" data-sprite="assets/sprites/powerups.png" style="background-position: 50% 0%;" alt="Isaw"></div>
+                    <div class="char-name" style="font-size: 1.5rem;">ISAW (STREET FOOD)</div>
+                    <div class="char-role">HEALTH RECOVERY</div>
+                    <div class="char-desc">Pampalakas! Nagbabalik ng iyong Health kapag ikaw ay nasaktan o nakagat ng aso.</div>
+                </div>
+                <div class="powerup-card">
+                    <div class="powerup-sprite" data-sprite="assets/sprites/powerups.png" style="background-position: 100% 0%;" alt="Agimat"></div>
+                    <div class="char-name" style="font-size: 1.5rem;">AGIMAT</div>
+                    <div class="char-role">INVINCIBILITY</div>
+                    <div class="char-desc">Anito Power! Hindi ka maita-tag o masasaktan ng kahit anong hazard sa kalsada.</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section" style="background: rgba(255,204,0,0.03); border-radius: 50px;">
+            <h2 class="section-title">PAANO MAGLARO?</h2>
+            
+            <div class="how-to-grid">
+                <!-- Desktop Controls -->
+                <div style="background: rgba(255,255,255,0.02); padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05);">
+                    <h3 style="font-family: 'Bangers'; color: var(--accent-yellow); text-align: center; margin-bottom: 30px; font-size: 2rem;">🖥️ DESKTOP</h3>
+                    <div class="control-item">
+                        <div class="control-key">WASD</div>
+                        <div class="control-desc">Galaw ng katawan</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">MOUSE</div>
+                        <div class="control-desc">Pang-asinta (Drag to Aim)</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">SHIFT</div>
+                        <div class="control-desc">Ratsada! (Quick Dash)</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">E</div>
+                        <div class="control-desc">Balat ng Saging</div>
+                    </div>
+                </div>
+
+                <!-- Mobile Controls -->
+                <div style="background: rgba(255,255,255,0.02); padding: 30px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05);">
+                    <h3 style="font-family: 'Bangers'; color: var(--accent-yellow); text-align: center; margin-bottom: 30px; font-size: 2rem;">📱 MOBILE</h3>
+                    <div class="control-item">
+                        <div class="control-key">JOYSTICK</div>
+                        <div class="control-desc">Kaliwang kamay pang-galaw</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">TOUCH</div>
+                        <div class="control-desc">Drag sa screen para asintahin</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">ICONS</div>
+                        <div class="control-desc">I-tap ang Skill Icons sa gilid</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">HOLD</div>
+                        <div class="control-desc">Bitawan para ibato ang tsinelas</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 50px;">
+                <div style="background: rgba(0,0,0,0.5); padding: 30px; border-radius: 20px; border: 2px dashed var(--accent-yellow); display: inline-block; max-width: 600px;">
+                    <h3 style="font-family: 'Bangers'; color: var(--accent-yellow);">TIP PARA SA PRO:</h3>
+                    <p style="font-style: italic; font-size: 1.1rem;">"Itumba ang lata, takbo sa loob ng bilog para mabawi ang tsinelas, tapos takbo pabalik sa safe line para maka-score!"</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section" style="text-align: center;">
+            <h2 class="section-title">READY KA NA BA?</h2>
+            <button onclick="enterGame()" class="btn-start-big">TARA, LARO NA!</button>
+        </section>
+    </div>
+
     <!-- Start Overlay -->
-    <div id="startOverlay" class="full-overlay">
-        <h1 class="main-title" style="font-size: 6rem;">TUMBANG PRESO</h1>
-        <div id="step1" class="d-flex flex-column gap-2">
-            <button onclick="showDiff()" class="btn-arcade">START LARO!</button>
+    <div id="pauseOverlay" class="full-overlay" style="display: none; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
+        <h1 class="main-title" style="font-size: 6rem; letter-spacing: 10px;">PAUSED</h1>
+        <div class="d-flex gap-3 mt-4">
+            <button onclick="togglePause()" class="btn-arcade">RESUME</button>
+            <button onclick="exitToLanding()" class="btn-arcade" style="background: #ff4444; box-shadow: 0 10px 0 #b30000;">QUIT</button>
         </div>
-        <div id="step2" style="display: none; text-align: center;">
-            <div class="d-flex gap-3 justify-content-center">
-                <button onclick="startGame('easy')" class="btn-arcade" style="background:#4caf50; font-size:1.5rem;">EASY</button>
-                <button onclick="startGame('medium')" class="btn-arcade" style="background:#ff9800; font-size:1.5rem;">MED</button>
-                <button onclick="startGame('hard')" class="btn-arcade" style="background:#f44336; font-size:1.5rem;">HARD</button>
+    </div>
+
+    <div id="startOverlay" class="full-overlay" style="display: none;">
+        <h1 class="main-title" style="font-size: 6rem;">TUMBANG PRESO</h1>
+        <!-- Step 1: Start Button -->
+        <div id="step1" class="d-flex flex-column align-items-center">
+            <button ontouchend="handleShowDiff()" onclick="handleShowDiff()" class="btn-arcade">START LARO!</button>
+        </div>
+        <!-- Step 2: Difficulty Selection -->
+        <div id="step2" style="display: none;" class="flex-column align-items-center">
+            <div class="d-flex gap-3 justify-content-center mb-4">
+                <button ontouchend="handleStartGame('easy')" onclick="handleStartGame('easy')" class="btn-arcade" style="background:#4caf50; font-size:1.5rem;">EASY</button>
+                <button ontouchend="handleStartGame('medium')" onclick="handleStartGame('medium')" class="btn-arcade" style="background:#ff9800; font-size:1.5rem;">MED</button>
+                <button ontouchend="handleStartGame('hard')" onclick="handleStartGame('hard')" class="btn-arcade" style="background:#f44336; font-size:1.5rem;">HARD</button>
             </div>
-            <div class="mt-4">
-                <button onclick="window.location.href='index.php'" class="btn-arcade" style="background:#666; font-size:1rem; padding:8px 20px; box-shadow: 0 4px 0 #333;">RESTART FROM GAME 1</button>
-            </div>
+            <button ontouchend="window.location.reload()" onclick="window.location.reload()" class="btn-arcade" style="background:#666; font-size:1rem; padding:8px 20px; box-shadow: 0 4px 0 #333;">RESTART GAME 1</button>
         </div>
     </div>
 
     <div id="resultOverlay" class="full-overlay" style="display: none;">
-        <div class="stat-label">FINAL PERFORMANCE</div>
+        <div id="celebrationContainer" style="position: absolute; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: -1;"></div>
+        <div id="statLabel" class="stat-label">FINAL PERFORMANCE</div>
         <div id="rankBadge" class="rank-badge">S</div>
         <h1 id="winnerTitle" class="main-title" style="font-size: 4rem;">STREET KING!</h1>
+        <p id="congratsSub" style="display: none; font-size: 1.5rem; color: #fff; margin-top: -10px;">Lupit mo, pre! Ikaw na talaga ang Hari ng Kalsada!</p>
         
         <table class="leaderboard-table">
             <thead><tr><th>RANK</th><th>PLAYER</th><th>SCORE</th></tr></thead>
@@ -245,10 +553,84 @@ require_once 'core/db.php';
         </table>
 
         <button id="resultBtn" class="btn-arcade">NEXT ROUND</button>
+        
+        <!-- Cheering Crowd Silhouettes -->
+        <div id="crowd-container" style="position:absolute; bottom:0; left:0; width:100%; height:120px; display:none; justify-content:space-around; align-items:flex-end; pointer-events:none; z-index:10;">
+            <div style="font-size: 5rem; animation: jump 0.5s infinite alternate;">🙌</div>
+            <div style="font-size: 4rem; animation: jump 0.6s infinite alternate-reverse;">🧒</div>
+            <div style="font-size: 5rem; animation: jump 0.4s infinite alternate;">💃</div>
+            <div style="font-size: 4.5rem; animation: jump 0.55s infinite alternate-reverse;">🕺</div>
+            <div style="font-size: 5rem; animation: jump 0.45s infinite alternate;">🔥</div>
+            <div style="font-size: 4rem; animation: jump 0.5s infinite alternate-reverse;">🧒</div>
+            <div style="font-size: 5rem; animation: jump 0.4s infinite alternate;">🙌</div>
+        </div>
+        <style>
+            @keyframes jump { from { transform: translateY(20px) scale(0.9); } to { transform: translateY(-30px) scale(1.1); } }
+            .zoom-in { animation: zoom-bounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+            @keyframes zoom-bounce { from { transform: scale(0); } to { transform: scale(1); } }
+            .shake { animation: shake-screen 0.5s infinite; }
+            @keyframes shake-screen { 
+                0% { transform: translate(1px, 1px) rotate(0deg); }
+                10% { transform: translate(-1px, -2px) rotate(-1deg); }
+                20% { transform: translate(-3px, 0px) rotate(1deg); }
+                30% { transform: translate(3px, 2px) rotate(0deg); }
+                40% { transform: translate(1px, -1px) rotate(1deg); }
+                50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            }
+        </style>
     </div>
 </div>
 
+<script>
+    // Global Bridges for HTML onclick
+    function handleShowDiff() {
+        if (window.showDiff) window.showDiff();
+        else console.error("Game engine not ready yet.");
+    }
+    function handleStartGame(lvl) {
+        if (window.startGame) window.startGame(lvl);
+        else console.error("Game engine not ready yet.");
+    }
+    function handleEnterGame() {
+        if (window.enterGame) window.enterGame();
+        else console.error("Game engine not ready yet.");
+    }
+</script>
+
 <script type="module">
+    // --- GLOBAL ENGINE STATE (MOVED TO TOP) ---
+    window.animationId = null;
+    window.isPaused = false;
+    window.isGameOver = false;
+    window.currentDifficulty = 'medium';
+    window.roundCount = parseInt(new URLSearchParams(window.location.search).get('round')) || 0;
+    window.lives = parseInt(new URLSearchParams(window.location.search).get('lives')) || 3;
+    window.isBossRound = (window.roundCount >= 1);
+    
+    let lastTime = 0;
+    let bossWarningTimer = 0;
+    let confettiParticles = [];
+    let fireworks = [];
+    let lataScore = 0; 
+    let tsinelasCount = 10;
+    let pendingScore = false;
+    let slipperRecovered = false;
+    let projectiles = [];
+    let isMuted = false;
+    let aiDecisionTimer = 0;
+    let traps = [];
+    let dogs = [];
+    let powerups = [];
+    let vehicles = [];
+    let shoutText = "";
+    let shoutTimer = 0;
+    let gameStartTime = 0;
+    let globalSpawnTimer = 0;
+    let aiFatigue = 0, aiMaxFatigue = 600;
+    let maxTraps = 2, trapsLeft = 2, trapCooldown = 0;
+    let lastDogSpawn = 0, lastPowerSpawn = 0, lastVehicleSpawn = 0;
+    let vehicleWarning = null;
+
     import Player from './game_engine/Player.js';
     import Projectile from './game_engine/Projectile.js';
     import input from './game_engine/Input.js';
@@ -268,27 +650,7 @@ require_once 'core/db.php';
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    let roundCount = parseInt(urlParams.get('round')) || 0;
-    if (!urlParams.get('next')) roundCount = 0; // Force Game 1 on manual refresh/new session
     
-    let savedLevel = urlParams.get('level');
-    let isBossRound = (roundCount >= 1); // After 1st win, it's Tanod territory forever!
-    
-    // Global Audio Resume
-    window.onclick = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); };
-    let bossWarningTimer = 0; 
-    let isGameOver = false; let lataScore = 0; let tsinelasCount = 10; 
-    let pendingScore = false, slipperRecovered = false, projectiles = [];
-    let currentDifficulty = 'medium', aiDecisionTimer = 0;
-    let traps = [], maxTraps = 2, trapsLeft = 2, trapCooldown = 0;
-    let aiFatigue = 0, aiMaxFatigue = 600;
-    let dogs = [], lastDogSpawn = 0;
-    let powerups = [], lastPowerSpawn = 0;
-    let vehicles = [], lastVehicleSpawn = 0, vehicleWarning = null;
-    let shoutText = "", shoutTimer = 0;
-    let gameStartTime = 0;
-    let globalSpawnTimer = 0; // Prevent overlapping spawns
-
     const aiConfig = {
         easy: { speed: 4, reaction: 0.1, chaseRange: 500, decisionDelay: 60 },
         medium: { speed: 6, reaction: 0.4, chaseRange: 900, decisionDelay: 20 },
@@ -300,36 +662,59 @@ require_once 'core/db.php';
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffers = {};
 
-    async function loadSound(name, url) {
-        try {
-            const response = await fetch(url);
-            const arrayBuffer = await response.arrayBuffer();
-            audioBuffers[name] = await audioCtx.decodeAudioData(arrayBuffer);
-        } catch (e) { console.error("Failed to load sound:", name); }
-    }
-    loadSound('bark', 'https://actions.google.com/sounds/v1/animals/dog_barking.ogg');
-    loadSound('throw', 'https://actions.google.com/sounds/v1/foley/fast_whoosh.ogg');
-    loadSound('horn', 'https://actions.google.com/sounds/v1/transportation/car_horn.ogg');
-
+    // Procedural Audio System (Enhanced Arcade Quality)
     const sounds = { 
         bgm: document.getElementById('audioBGM'),
+        bark: document.getElementById('audioBark'),
+        horn: document.getElementById('audioHorn'),
+        whistle: document.getElementById('audioWhistle'),
+        cheer: document.getElementById('audioCheer'),
         play(type) {
             if (isMuted) return;
-            if (audioBuffers[type]) {
-                const source = audioCtx.createBufferSource();
-                source.buffer = audioBuffers[type];
-                source.connect(audioCtx.destination);
-                source.start(0);
-                if (type === 'bark') source.stop(audioCtx.currentTime + 1.5);
-                if (type === 'horn') source.stop(audioCtx.currentTime + 1.2);
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Priority: HTML5 Audio for high-quality recorded sounds
+            const el = document.getElementById('audio' + type.charAt(0).toUpperCase() + type.slice(1));
+            if (el) {
+                el.currentTime = 0;
+                try {
+                    el.play().catch(e => {
+                        this.playProcedural(type);
+                    });
+                } catch (e) {
+                    this.playProcedural(type);
+                }
                 return;
             }
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
             
-            if (type === 'throw') {
+            this.playProcedural(type);
+        },
+        playProcedural(type) {
+            const now = audioCtx.currentTime;
+            if (type === 'engine') {
+                // Mechanical Jeep Engine Hum
+                const o1 = audioCtx.createOscillator(); const o2 = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o1.type = 'sawtooth'; o1.frequency.value = 60;
+                o2.type = 'sine'; o2.frequency.value = 30; // Sub-bass hum
+                g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.08, now + 0.1);
+                g.gain.setValueAtTime(0.08, now + 0.4); g.gain.linearRampToValueAtTime(0, now + 0.5);
+                o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+                o1.start(now); o1.stop(now + 0.5); o2.start(now); o2.stop(now + 0.5);
+            } else if (type === 'bark') {
+                // Triple-Punch Procedural Bark (Sounds like a real dog)
+                for(let i=0; i<3; i++) {
+                    const t = now + i*0.06;
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.type = 'sawtooth';
+                    o.frequency.setValueAtTime(400 - i*50, t);
+                    o.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+                    g.gain.setValueAtTime(1.0, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(t); o.stop(t + 0.12);
+                }
+            } else if (type === 'throw') {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 const bufferSize = audioCtx.sampleRate * 0.4;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -342,55 +727,163 @@ require_once 'core/db.php';
                 gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
                 noise.start(now); noise.stop(now + 0.4);
             } else if (type === 'hit') {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.type = 'sine'; osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
                 gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'bark') {
-                // Procedural Bark (Old School Arcade Style)
-                [now, now + 0.12].forEach(t => {
-                    const bOsc = audioCtx.createOscillator();
-                    const bGain = audioCtx.createGain();
-                    bOsc.type = 'square';
-                    bOsc.frequency.setValueAtTime(150, t);
-                    bOsc.frequency.linearRampToValueAtTime(50, t + 0.08);
-                    bGain.gain.setValueAtTime(0.5, t);
-                    bGain.gain.linearRampToValueAtTime(0, t + 0.08);
-                    bOsc.connect(bGain); bGain.connect(audioCtx.destination);
-                    bOsc.start(t); bOsc.stop(t + 0.08);
-                });
             } else if (type === 'slip') {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.type = 'sine'; osc.frequency.setValueAtTime(200, now);
                 osc.frequency.exponentialRampToValueAtTime(800, now + 0.5);
                 gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(now); osc.stop(now + 0.5);
             } else if (type === 'horn') {
-                // Pinoy Jeepney Horn (Beep-Beep!)
-                [now, now + 0.25].forEach(t => {
-                    const hOsc = audioCtx.createOscillator(); const hGain = audioCtx.createGain();
-                    hOsc.type = 'triangle'; hOsc.frequency.setValueAtTime(440, t);
-                    hGain.gain.setValueAtTime(0.3, t); hGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-                    hOsc.connect(hGain); hGain.connect(audioCtx.destination);
-                    hOsc.start(t); hOsc.stop(t + 0.15);
-                });
+                const o1 = audioCtx.createOscillator(); const o2 = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o1.type = 'triangle'; o1.frequency.value = 440;
+                o2.type = 'triangle'; o2.frequency.value = 554.37;
+                g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.4, now + 0.05);
+                g.gain.setValueAtTime(0.4, now + 0.2); g.gain.linearRampToValueAtTime(0, now + 0.3);
+                o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+                o1.start(now); o1.stop(now + 0.3); o2.start(now); o2.stop(now + 0.3);
             } else if (type === 'whistle') {
-                // Tanod Whistle (Sharp High Pitch)
-                const wOsc = audioCtx.createOscillator(); const wGain = audioCtx.createGain();
-                wOsc.type = 'sine'; wOsc.frequency.setValueAtTime(2500, now);
-                wOsc.frequency.exponentialRampToValueAtTime(2800, now + 0.1);
-                wOsc.frequency.exponentialRampToValueAtTime(2500, now + 0.2);
-                wGain.gain.setValueAtTime(0.3, now); wGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                wOsc.connect(wGain); wGain.connect(audioCtx.destination);
-                wOsc.start(now); wOsc.stop(now + 0.4);
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(2500, now);
+                osc.frequency.exponentialRampToValueAtTime(2800, now + 0.1);
+                osc.frequency.exponentialRampToValueAtTime(2500, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.4);
             }
         }
     };
     sounds.bgm.loop = true; sounds.bgm.volume = 0.15;
-    let isMuted = false;
+    window.onclick = () => { 
+        if (audioCtx.state === 'suspended') audioCtx.resume(); 
+        if (sounds.bgm.paused && !isMuted) sounds.bgm.play().catch(e => {});
+        
+        // Mobile "Unlock All" Trick - Play all sounds at 0 volume once
+        ['Bark', 'Horn', 'Whistle', 'Hit', 'Cheer'].forEach(id => {
+            const el = document.getElementById('audio' + id);
+            if (el) { 
+                const originalVol = el.volume;
+                el.volume = 0; 
+                el.play().then(() => { el.pause(); el.currentTime = 0; el.volume = originalVol; }).catch(e => {}); 
+            }
+        });
+    };
     window.toggleMute = () => { 
         isMuted = !isMuted; sounds.bgm.muted = isMuted;
         document.getElementById('muteIcon').innerText = isMuted ? '🔇' : '🔊'; 
     };
+
+    window.togglePause = () => {
+        if (isGameOver || document.getElementById('startOverlay').style.display !== 'none' || document.getElementById('landingPage').style.display !== 'none') return;
+        isPaused = !isPaused;
+        document.getElementById('pauseOverlay').style.display = isPaused ? 'flex' : 'none';
+        document.getElementById('pauseBtn').innerText = isPaused ? '▶' : '⏸';
+        
+        if (isPaused) {
+            sounds.bgm.pause();
+        } else {
+            if (!isMuted) sounds.bgm.play().catch(e => {});
+            gameLoop(); // Restart loop if it stopped
+        }
+    };
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+    });
+
+    window.enterGame = () => {
+        // --- AUTO FULLSCREEN & LANDSCAPE LOCK FOR MOBILE ---
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 800 && window.innerHeight >= 500);
+        
+        if (isMobile) {
+            const doc = document.documentElement;
+            const requestFS = doc.requestFullscreen || doc.webkitRequestFullscreen || doc.mozRequestFullScreen || doc.msRequestFullscreen;
+            if (requestFS) {
+                requestFS.call(doc).then(() => {
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').catch(() => {
+                            console.log("Orientation lock not supported or needs user gesture");
+                        });
+                    }
+                }).catch(e => console.log("FS failed:", e));
+            }
+        }
+
+        document.getElementById('landingPage').style.display = 'none';
+        document.getElementById('startOverlay').style.display = 'flex';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (sounds.bgm.paused && !isMuted) sounds.bgm.play().catch(e => {});
+    };
+
+    window.exitToLanding = () => {
+        if (confirm("Lalabas ka na ba, pre? Mawawala 'yung progress mo.")) {
+            window.location.href = window.location.pathname;
+        }
+    };
+
+    // --- LANDING PAGE TRANSPARENCY FIX ---
+    function fixLandingSprites() {
+        // Fix for standard images
+        document.querySelectorAll('.char-sprite-box img').forEach(img => {
+            const process = () => {
+                const os = document.createElement('canvas');
+                const osCtx = os.getContext('2d');
+                os.width = img.naturalWidth;
+                os.height = img.naturalHeight;
+                osCtx.drawImage(img, 0, 0);
+                const id = osCtx.getImageData(0, 0, os.width, os.height);
+                const d = id.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    // Lowered threshold to 200 to catch off-white backgrounds
+                    if (d[i] > 200 && d[i+1] > 200 && d[i+2] > 200) d[i+3] = 0;
+                }
+                osCtx.putImageData(id, 0, 0);
+                img.src = os.toDataURL();
+                img.classList.add('ready');
+            };
+            if (img.complete) process();
+            else img.onload = process;
+        });
+
+        // Fix for power-up background sprites
+        document.querySelectorAll('.powerup-sprite').forEach(div => {
+            const spriteUrl = div.getAttribute('data-sprite');
+            const img = new Image();
+            img.src = spriteUrl;
+            img.onload = () => {
+                const os = document.createElement('canvas');
+                const osCtx = os.getContext('2d');
+                os.width = img.width;
+                os.height = img.height;
+                osCtx.drawImage(img, 0, 0);
+                const id = osCtx.getImageData(0, 0, os.width, os.height);
+                const d = id.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    // Catch near-white backgrounds
+                    if (d[i] > 200 && d[i+1] > 200 && d[i+2] > 200) d[i+3] = 0;
+                }
+                osCtx.putImageData(id, 0, 0);
+                div.style.backgroundImage = `url(${os.toDataURL()})`;
+                div.classList.add('ready');
+            };
+        });
+    }
+    // --- PWA SERVICE WORKER REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW Registered!', reg))
+                .catch(err => console.log('SW Failed!', err));
+        });
+    }
+
+    fixLandingSprites();
 
     // --- ALIGNED TO BACKGROUND IMAGE ---
     // Background Circle is at roughly 415, 600 in a 1400x900 scale
@@ -450,65 +943,149 @@ require_once 'core/db.php';
     const tanodImg = new Image(); tanodImg.src = 'assets/sprites/tanod_body.png';
     let processedTanod = null;
     processImageTransparency(tanodImg, (c) => processedTanod = c);
+    function resetGameState() {
+        const config = aiConfig[currentDifficulty];
+        
+        // Reset Player 1
+        p1.x = 1100; p1.y = 450; p1.health = 100; p1.isStunned = false; p1.stunTimer = 0;
+        p1.velocityX = 0; p1.velocityY = 0; p1.velocityZ = 0; p1.z = 0; p1.grounded = true;
+        p1.speed = p1.baseSpeed; p1.speedTimer = 0; p1.invinceTimer = 0; p1.isInvincible = false;
+        p1.slowTimer = 0;
+        if (p1.bodyImage.complete) p1.processTransparency(p1.bodyImage, p1.offscreenCanvas, p1.offscreenCtx);
+        p1.bodyLoaded = true;
+
+        // Reset Player 2 (Tayâ)
+        p2.x = 400; p2.y = 450; p2.health = 100; p2.isStunned = false; p2.stunTimer = 0;
+        p2.velocityX = 0; p2.velocityY = 0; p2.velocityZ = 0; p2.z = 0; p2.grounded = true;
+        p2.speed = isBossRound ? config.speed * 1.3 : config.speed;
+        p2.tagRadius = isBossRound ? 130 : 95;
+        const targetSprite = isBossRound ? 'assets/sprites/tanod_body.png' : 'assets/sprites/p2_body.png';
+        if (!p2.bodyImage.src.includes(targetSprite)) {
+            p2.bodyImage.src = targetSprite;
+            p2.bodyImage.onload = () => {
+                p2.processTransparency(p2.bodyImage, p2.offscreenCanvas, p2.offscreenCtx);
+                p2.bodyLoaded = true;
+            };
+        } else {
+            if (p2.bodyImage.complete) p2.processTransparency(p2.bodyImage, p2.offscreenCanvas, p2.offscreenCtx);
+            p2.bodyLoaded = true;
+        }
+
+        // Reset Lata
+        lata.x = CIRCLE_X; lata.y = CIRCLE_Y; lata.z = 0;
+        lata.vx = 0; lata.vy = 0; lata.vz = 0;
+        lata.isDown = false; lata.isBeingCarried = false;
+        
+        // Reset Global State
+        projectiles = []; traps = []; dogs = []; powerups = []; vehicles = [];
+        lataScore = 0; tsinelasCount = 10;
+        pendingScore = false; slipperRecovered = false;
+        shoutText = ""; shoutTimer = 0;
+        
+        // Update UI
+        document.getElementById('p1-health').style.width = '100%';
+        document.getElementById('p2-health').style.width = '100%';
+        document.getElementById('tsinelas-count').innerText = tsinelasCount;
+        document.getElementById('current-score').innerText = "0 / 3";
+
+        // --- FINAL VISIBILITY KICK ---
+        p1.bodyLoaded = true;
+        p2.bodyLoaded = true;
+    }
+
     const dashIconImg = new Image(); dashIconImg.src = 'assets/sprites/dash_icon.png';
     processImageTransparency(dashIconImg, (c) => {
         document.getElementById('dash-icon-container').appendChild(c);
     });
 
-    window.showDiff = () => { 
-        document.getElementById('step1').style.display = 'none'; 
-        document.getElementById('step2').style.display = 'block'; 
-        sounds.bgm.play().catch(e => console.log("Audio blocked"));
+    window.showDiff = () => {
+        const s1 = document.getElementById('step1');
+        const s2 = document.getElementById('step2');
+        if (s1) s1.setAttribute('style', 'display: none !important');
+        if (s2) {
+            s2.setAttribute('style', 'display: flex !important');
+            s2.classList.add('d-flex', 'flex-column', 'align-items-center');
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (sounds.bgm.paused) sounds.bgm.play().catch(e => {});
     };
-    window.startGame = (level) => {
-        isGameOver = false; 
-        currentDifficulty = level; 
-        gameStartTime = Date.now(); // Record start time for grace period
-        
-        p2.bodyLoaded = false; 
-        p2.bodyImage.onload = () => { 
-            p2.processTransparency(p2.bodyImage, p2.offscreenCanvas, p2.offscreenCtx); 
-            p2.bodyLoaded = true; 
-        };
 
-        // Initial setup for the round (SET SRC AFTER ONLOAD)
-        if (isBossRound) {
-            bossWarningTimer = 180; 
-            p2.bodyImage.src = 'assets/sprites/tanod_body.png';
-            p2.speed = aiConfig[level].speed * 1.3;
-            p2.tagRadius = 130;
-        } else {
-            p2.bodyImage.src = 'assets/sprites/p2_body.png';
-            p2.speed = aiConfig[level].speed;
-            p2.tagRadius = 95;
+
+
+    window.startGame = (level) => {
+        window.currentDifficulty = level;
+        window.isBossRound = (window.roundCount >= 1);
+        window.isGameOver = false;
+        window.isPaused = false;
+
+        // --- FULLSCREEN FOR MOBILE ONLY ---
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            try {
+                const doc = document.documentElement;
+                if (!document.fullscreenElement) {
+                    if (doc.requestFullscreen) doc.requestFullscreen().catch(() => {});
+                    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+                }
+            } catch (e) {}
         }
 
-        document.getElementById('startOverlay').style.display = 'none'; 
-        document.getElementById('difficulty-text').innerText = level.toUpperCase();
+        if (window.animationId) {
+            cancelAnimationFrame(window.animationId);
+            window.animationId = null;
+        }
+        gameStartTime = Date.now();
+
+        // INSTANT START
+        resetGameState();
+        const s1 = document.getElementById('step1');
+        const s2 = document.getElementById('step2');
+        if (s1) s1.setAttribute('style', 'display: none !important');
+        if (s2) s2.setAttribute('style', 'display: none !important');
         
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        sounds.bgm.play().catch(e => {}); 
+        const overlay = document.getElementById('startOverlay');
+        if (overlay) overlay.style.display = 'none';
+        document.getElementById('difficulty-text').innerText = level.toUpperCase();
         
         const indicator = document.getElementById('roundIndicator');
         if (indicator) {
-            indicator.innerText = `GAME ${roundCount + 1}`;
-            if (isBossRound) {
+            indicator.innerText = `GAME ${window.roundCount + 1}`;
+            if (window.isBossRound) {
                 indicator.classList.add('boss-tag');
                 indicator.innerText += " (BOSS)";
             } else {
                 indicator.classList.remove('boss-tag');
             }
         }
+        
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (sounds.bgm.paused) sounds.bgm.play().catch(e => {});
+        
+        // --- ENSURE RENDERING STARTS ---
+        lastTime = performance.now();
+        window.isPaused = false;
+        window.animationId = requestAnimationFrame(window.gameLoop);
+    };
 
-        gameLoop();
+    window.gameLoop = (timestamp = 0) => {
+        if (window.isPaused || window.isGameOver) return;
+        
+        // --- PHYSICS GUARD: CAP DELTA TIME ---
+        let deltaTime = timestamp - lastTime;
+        if (deltaTime > 100) deltaTime = 16; // Prevent "teleportation" on first frame
+        lastTime = timestamp;
+
+        update();
+        draw();
+        window.animationId = requestAnimationFrame(window.gameLoop);
     };
 
     function updateAI() {
-        if (p2.isStunned || isGameOver) return;
-        const config = aiConfig[currentDifficulty];
+        if (p2.isStunned || window.isGameOver) return;
+        const config = aiConfig[window.currentDifficulty];
         
         // Boss Whistle Logic
-        if (isBossRound && Math.random() < 0.005) { 
+        if (window.isBossRound && Math.random() < 0.005) { 
             sounds.play('whistle'); p1.slowTimer = 120; // 2s slow
             shoutText = "PITOOOO!";
             shoutTimer = 120; // 2s display
@@ -563,7 +1140,7 @@ require_once 'core/db.php';
     let isAiming = false, dragStartX = 0, dragStartY = 0, dragX = 0, dragY = 0;
     
     function startAim(e) {
-        if (tsinelasCount <= 0 || p1.isStunned || isGameOver) return;
+        if (tsinelasCount <= 0 || p1.isStunned || window.isGameOver) return;
         const pos = getMousePos(e);
         if (Math.sqrt((pos.x - (p1.x + p1.width/2))**2 + (pos.y - (p1.y + p1.height/2))**2) < 120) { 
             isAiming = true; dragStartX = p1.x + p1.width/2; dragStartY = p1.y + p1.height/2; 
@@ -654,7 +1231,7 @@ require_once 'core/db.php';
     function updateDogs() {
         if (isGameOver) return;
         const now = Date.now();
-        // Spawn Logic (After 15s, with 5s gap between any spawn)
+        // Spawn Logic (Back to normal)
         if (now - gameStartTime > 15000 && now - globalSpawnTimer > 5000 && now - lastDogSpawn > 20000 + Math.random() * 15000) {
             const side = Math.random() > 0.5 ? 'left' : 'right';
             dogs.push({ 
@@ -672,10 +1249,22 @@ require_once 'core/db.php';
         for (let i = dogs.length - 1; i >= 0; i--) {
             const d = dogs[i]; d.x += d.vx;
             
-            // Bark only when entering the screen (between 150 and 50 pixels from edge)
-            if (!d.hasBarked && ((d.vx > 0 && d.x > -50) || (d.vx < 0 && d.x < canvas.width + 50))) {
+            // Bark only when entering the screen
+            if (!d.hasBarked && ((d.vx > 0 && d.x > -100) || (d.vx < 0 && d.x < canvas.width + 100))) {
                 sounds.play('bark');
                 d.hasBarked = true;
+                d.barkTimer = 60; // Show "AW-AW!" for 1s
+            }
+            
+            // Draw Bark Bubble
+            if (d.barkTimer > 0) {
+                d.barkTimer--;
+                ctx.save();
+                ctx.fillStyle = 'white'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
+                ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
+                ctx.strokeText("AW-AW!", d.x, d.y - 50);
+                ctx.fillText("AW-AW!", d.x, d.y - 50);
+                ctx.restore();
             }
 
             if (processedDog) {
@@ -690,7 +1279,7 @@ require_once 'core/db.php';
             if (!d.damaged.p2 && Math.sqrt((d.x - (p2.x+p2.width/2))**2 + (d.y - (p2.y+p2.height/2))**2) < 60) { 
                 p2.takeDamage(10); p2.stun(60, 0.4); d.damaged.p2 = true; showCombo("AW-AW!"); 
             }
-            if (Math.sqrt((d.x - lata.x)**2 + (d.y - lata.y)**2) < 50 && !lata.isDown) { lata.hit(d.vx*2, 0); showCombo("LATA GULO!"); }
+            if (Math.sqrt((d.x - lata.x)**2 + (d.y - lata.y)**2) < 50 && !lata.isDown) { lata.hit(d.vx*2, 0); showCombo("TABEE!!"); }
             
             if (d.x < -200 || d.x > canvas.width + 200) dogs.splice(i, 1);
         }
@@ -731,7 +1320,7 @@ require_once 'core/db.php';
             // Collision with P1
             const dist = Math.sqrt((p.x - (p1.x+p1.width/2))**2 + (p.y - (p1.y+p1.height/2))**2);
             if (dist < 60) {
-                if (p.type === 'sili') { p1.speed = 15; p1.speedTimer = 420; showCombo("ANASANG!"); }
+                if (p.type === 'sili') { p1.speed = 15; p1.speedTimer = 420; showCombo("AGNAS!"); }
                 else if (p.type === 'isaw') { p1.health = Math.min(p1.health + 25, 100); showCombo("SOLVE!"); }
                 else if (p.type === 'agimat') { p1.isInvincible = true; p1.invinceTimer = 420; showCombo("BALAT-SIBUNYAS!"); }
                 powerups.splice(i, 1); sounds.play('hit');
@@ -777,9 +1366,10 @@ require_once 'core/db.php';
         for (let i = vehicles.length - 1; i >= 0; i--) {
             const v = vehicles[i]; v.x += v.vx;
             
-            // Horn when entering screen
+            // Horn and Engine when entering screen
             if (!v.hasHorned && ((v.vx > 0 && v.x > -300) || (v.vx < 0 && v.x < canvas.width + 300))) {
                 sounds.play('horn');
+                sounds.play('engine');
                 v.hasHorned = true;
             }
 
@@ -798,7 +1388,7 @@ require_once 'core/db.php';
             // Collision with P1
             if (!v.damaged.p1 && !p1.isInvincible && Math.abs(v.x - (p1.x+p1.width/2)) < 150 && Math.abs(v.y - (p1.y+p1.height/2)) < 80) {
                 p1.takeDamage(25); p1.stun(120, 0.5); v.damaged.p1 = true;
-                showCombo("PARPARA!"); sounds.play('hit');
+                showCombo("PARAPARA!"); sounds.play('hit');
             }
             // Collision with P2
             if (!v.damaged.p2 && Math.abs(v.x - (p2.x+p2.width/2)) < 150 && Math.abs(v.y - (p2.y+p2.height/2)) < 80) {
@@ -808,15 +1398,45 @@ require_once 'core/db.php';
             // Collision with Lata
             if (!v.damaged.lata && Math.abs(v.x - lata.x) < 150 && Math.abs(v.y - lata.y) < 80) {
                 lata.hit(v.vx * 1.5, (Math.random()-0.5)*10); v.damaged.lata = true;
-                showCombo("LATA GULO!");
+                showCombo("ALIS!!!");
             }
 
             if (v.x < -1000 || v.x > canvas.width + 1000) vehicles.splice(i, 1);
         }
     }
 
-    function gameLoop() {
-        if (isGameOver) return; ctx.clearRect(0, 0, canvas.width, canvas.height);
+    window.gameLoop = (timestamp = 0) => {
+        if (window.isPaused || isGameOver) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw Confetti (Always allow drawing if particles exist)
+        if (confettiParticles.length > 0) {
+            confettiParticles.forEach((p, i) => {
+                p.y += p.v; p.r += p.rv;
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+                ctx.fillStyle = p.c; ctx.fillRect(-5, -5, 10, 10); ctx.restore();
+                if (p.y > canvas.height) confettiParticles.splice(i, 1);
+            });
+        }
+
+        // Draw Fireworks
+        if (fireworks.length > 0) {
+            fireworks.forEach((f, fi) => {
+                f.particles.forEach((p, pi) => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.alpha -= 0.01;
+                    ctx.save(); ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                    if (p.alpha <= 0) f.particles.splice(pi, 1);
+                });
+                if (f.particles.length === 0) fireworks.splice(fi, 1);
+            });
+        }
+
+        if (window.isGameOver) {
+            if (confettiParticles.length > 0 || fireworks.length > 0) requestAnimationFrame(gameLoop);
+            return; 
+        }
         
         if (bossWarningTimer > 0) {
             bossWarningTimer--;
@@ -853,9 +1473,9 @@ require_once 'core/db.php';
         }
         if (trapCooldown > 0) trapCooldown--;
 
-        updateDogs();
-        updatePowerups();
-        updateVehicles();
+        try { updateDogs(); } catch(e) {}
+        try { updatePowerups(); } catch(e) {}
+        try { updateVehicles(); } catch(e) {}
         updateAI(); lata.update(); p1.update(canvas.width, canvas.height); p2.update(canvas.width, canvas.height);
         
         // Update Skill UI
@@ -960,40 +1580,114 @@ require_once 'core/db.php';
         }
 
         document.getElementById('p1-health').style.width = p1.health + '%'; document.getElementById('p2-health').style.width = p2.health + '%';
-        if (!isGameOver) { if (p2.health <= 0 || lataScore >= 3) showFinalResult("VICTORY!"); else if (p1.health <= 0) showFinalResult("TAYÂ WINS!"); else if (tsinelasCount === 0 && projectiles.length === 0 && !lata.isDown) showFinalResult("NAUBUSAN KA!"); }
-        if (!isGameOver) requestAnimationFrame(gameLoop);
+        if (!window.isGameOver) { 
+            if (p2.health <= 0 || lataScore >= 3) showFinalResult("VICTORY!"); 
+            else if (p1.health <= 0) showFinalResult("TAYÂ WINS!"); 
+            else if (tsinelasCount === 0 && projectiles.length === 0 && !lata.isDown) showFinalResult("NAUBUSAN KA!"); 
+        }
+        
+        if (!window.isGameOver) window.animationId = requestAnimationFrame(window.gameLoop);
     }
     function showFinalResult(title) { 
-        isGameOver = true; 
-        document.getElementById('winnerTitle').innerText = title; 
-        
-        if (title === "VICTORY!") roundCount++; // Increment games won
+        window.isGameOver = true; 
+        const isVictory = (title === "VICTORY!");
+        if (isVictory) roundCount++; 
+        else lives--;
 
-        // Calculate Rank
-        let rank = "C";
-        if (title === "VICTORY!") {
-            if (p1.health === 100) rank = "S";
-            else if (p1.health > 70) rank = "A";
-            else rank = "B";
-        } else {
-            rank = "F";
+        const resultOverlay = document.getElementById('resultOverlay');
+        const winnerTitle = document.getElementById('winnerTitle');
+        const congratsSub = document.getElementById('congratsSub');
+        const statLabel = document.getElementById('statLabel');
+        const resultBtn = document.getElementById('resultBtn');
+
+        winnerTitle.innerText = title; 
+        congratsSub.style.display = 'none';
+        winnerTitle.classList.remove('victory-glow');
+
+        // Check for Grand Finale (Won Game 2)
+        const isGrandFinale = isVictory && roundCount >= 2;
+
+        if (isGrandFinale) {
+            winnerTitle.innerText = "👑 STREET LEGEND 👑";
+            winnerTitle.classList.add('victory-glow', 'zoom-in');
+            congratsSub.style.display = 'block';
+            document.getElementById('crowd-container').style.display = 'flex';
+            document.getElementById('gameWrapper').classList.add('shake');
+            setTimeout(() => document.getElementById('gameWrapper').classList.remove('shake'), 2000);
+
+            statLabel.innerText = "🏆 ULTIMATE CHAMPION 🏆";
+            document.getElementById('rankBadge').innerText = "👑";
+            
+            // Spawn Confetti
+            confettiParticles = [];
+            const colors = ['#ffcc00', '#ffeb3b', '#00ffff', '#ff4081', '#ffffff'];
+            for(let i=0; i<200; i++) {
+                confettiParticles.push({
+                    x: Math.random() * canvas.width, y: -Math.random() * 500,
+                    v: 3 + Math.random() * 6, r: Math.random() * Math.PI * 2,
+                    rv: Math.random() * 0.2 - 0.1, c: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+
+            // Spawn Fireworks Logic
+            const spawnFirework = () => {
+                if (!isGameOver) return;
+                const fx = Math.random() * canvas.width;
+                const fy = 100 + Math.random() * 300;
+                const fcolor = colors[Math.floor(Math.random() * colors.length)];
+                const parts = [];
+                for(let i=0; i<50; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2 + Math.random() * 5;
+                    parts.push({ x: fx, y: fy, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, alpha: 1, color: fcolor });
+                }
+                fireworks.push({ particles: parts });
+                if (fireworks.length < 10) setTimeout(spawnFirework, 400 + Math.random() * 600);
+            };
+            spawnFirework();
+
+            sounds.play('cheer');
+            sounds.play('whistle');
+            setTimeout(() => sounds.play('whistle'), 400);
+        }
+
+        // Calculate Rank (if not grand finale)
+        if (!isGrandFinale) {
+            let rank = "C";
+            if (isVictory) {
+                if (p1.health === 100) rank = "S";
+                else if (p1.health > 70) rank = "A";
+                else rank = "B";
+            } else {
+                rank = "F";
+            }
+            document.getElementById('rankBadge').innerText = rank;
         }
         
-        document.getElementById('rankBadge').innerText = rank;
         document.getElementById('finalScoreText').innerText = `${lataScore} / ${3 - Math.floor(p2.health/33)}`;
         
-        // Update Button Text & Action
-        const resultBtn = document.getElementById('resultBtn');
         if (resultBtn) {
-            const nextRound = (title === "VICTORY!") ? roundCount + 1 : 0;
-            resultBtn.innerText = (title === "VICTORY!") ? "NEXT ROUND" : "TRY AGAIN";
-            resultBtn.onclick = () => { 
-                const levelParam = (title === "VICTORY!") ? "&level=" + currentDifficulty : "";
-                window.location.href = window.location.pathname + "?round=" + nextRound + "&next=true" + levelParam;
-            };
+            if (isGrandFinale) {
+                resultBtn.innerText = "MAGLARO ULIT!";
+                resultBtn.style.background = "#4caf50";
+                resultBtn.onclick = () => window.location.href = "index.php";
+            } else if (lives > 0 || isVictory) {
+                const nextRound = isVictory ? roundCount : roundCount;
+                resultBtn.innerText = isVictory ? "NEXT ROUND" : `RETRY (${lives} BUHAY NALANG!)`;
+                resultBtn.style.background = isVictory ? "var(--accent-yellow)" : "#f44336";
+                resultBtn.onclick = () => { 
+                    const levelParam = "&level=" + currentDifficulty;
+                    window.location.href = window.location.pathname + "?round=" + nextRound + "&lives=" + lives + "&next=true" + levelParam;
+                };
+            } else {
+                winnerTitle.innerText = "UBOS ANG BUHAY!";
+                resultBtn.innerText = "BALIK SA SIMULA";
+                resultBtn.style.background = "#666";
+                resultBtn.onclick = () => window.location.href = "index.php";
+            }
         }
         
-        document.getElementById('resultOverlay').style.display = 'flex'; 
+        resultOverlay.style.display = 'flex'; 
     }
 </script>
 </body>

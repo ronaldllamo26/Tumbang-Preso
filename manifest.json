@@ -1,0 +1,23 @@
+{
+  "name": "Tumbang Preso Street King",
+  "short_name": "TumbangPreso",
+  "description": "The ultimate Filipino street game experience.",
+  "start_url": "./index.php",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#ffcc00",
+  "icons": [
+    {
+      "src": "assets/sprites/p1_body.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/sprites/p1_body.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

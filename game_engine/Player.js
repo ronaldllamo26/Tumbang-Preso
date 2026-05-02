@@ -76,15 +76,22 @@ class Player {
     }
 
     processTransparency(img, canvas, ctx) {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i] > 240 && data[i+1] > 240 && data[i+2] > 240) data[i+3] = 0;
+        canvas.width = this.width; // FORCE PLAYER WIDTH
+        canvas.height = this.height; // FORCE PLAYER HEIGHT
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (img.complete && img.width > 0) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i] > 240 && data[i+1] > 240 && data[i+2] > 240) data[i+3] = 0;
+            }
+            ctx.putImageData(imageData, 0, 0);
+        } else {
+            // Fallback: draw a colored box if image is not ready
+            ctx.fillStyle = this.color;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        ctx.putImageData(imageData, 0, 0);
     }
 
     setFace(imagePath) {
