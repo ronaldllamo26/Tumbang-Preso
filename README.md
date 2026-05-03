@@ -58,5 +58,5 @@ https://github.com/user-attachments/assets/53c3bc62-b741-4737-9da9-2629e546c07f
 
 ---
 
-### 🧱 Developed with 🔥 by Antigravity
+### 🧱 Developed with 🔥 by SynTuxz
 *"Ang larong kalsada, nasa computer mo na!"*
